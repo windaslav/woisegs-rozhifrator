@@ -1,19 +1,18 @@
 import telebot
-import subprocess
 import speech_recognition as sr
 from pydub import AudioSegment
+import requests
 
 bot = telebot.TeleBot("вставьте суда свой токен")
 
 # Функция для обработки голосовых сообщений
 @bot.message_handler(content_types=['voice'])
 def voice_to_text(message):
-    voice_file_info = bot.get_file(message.voice.file_id)
-    voice_file = bot.download_file(voice_file_info.file_path)
-    with open('voice.ogg', 'wb') as file:
-        file.write(voice_file)
+    file_info = bot.get_file(message.voice.file_id)
+    file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format("в ведите суда свой токен от бота", file_info.file_path))
+    with open('voice.ogg', 'wb') as f:
+        f.write(file.content)
 
-    # Конвертация файла в WAV с помощью pydub
     audio = AudioSegment.from_file("voice.ogg", format="ogg")
     audio.export("voice.wav", format="wav")
 
@@ -23,10 +22,10 @@ def voice_to_text(message):
 
     try:
         text = recognizer.recognize_google(audio_data, language="ru-RU")
-        bot.send_message(message.chat.id, text)
+        bot.reply_to(message, text)
     except sr.UnknownValueError:
-        bot.send_message(message.chat.id, "Извините, не удалось распознать голосовое сообщение")
+        bot.reply_to(message, "Извините, не удалось распознать голосовое сообщение, идите нахер, или попробуйте ещё раз")
     except sr.RequestError:
-        bot.send_message(message.chat.id, "Извините, возникла проблема с обработкой вашего запроса")
+        bot.reply_to(message, "Извините, возникла проблема с обработкой вашего запроса")
 
 bot.polling()
